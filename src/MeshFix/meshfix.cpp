@@ -32,21 +32,21 @@ bool joinClosestComponents(Basic_TMesh *tin)
 	List **bloops_array;
 	int i, j, numloops;
 
-	// Mark triangles with connected component's unique ID 
+	// Mark triangles with connected component's unique ID
 	i = 0;
 	FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
 	FOREACHVTTRIANGLE((&(tin->T)), t, n) if (t->info == NULL)
 	{
 		i++;
 		triList.appendHead(t);
-		t->info = (void *)i;
+		t->info = (void *)(intptr_t)i;
 
 		while (triList.numels())
 		{
 			t = (Triangle *)triList.popHead();
-			if ((s = t->t1()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)i; }
-			if ((s = t->t2()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)i; }
-			if ((s = t->t3()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)i; }
+			if ((s = t->t1()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)(intptr_t)i; }
+			if ((s = t->t2()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)(intptr_t)i; }
+			if ((s = t->t3()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = (void *)(intptr_t)i; }
 		}
 	}
 

@@ -40,12 +40,12 @@ extern "C" void initPredicates();
 
 void (* TMesh::display_message)(const char*, int) = NULL;
 
-char *TMesh::app_name = NULL;
-char *TMesh::app_version = NULL;
-char *TMesh::app_year = NULL;
-char *TMesh::app_authors = NULL;
-char *TMesh::app_url = NULL;
-char *TMesh::app_maillist = NULL;
+const char *TMesh::app_name = NULL;
+const char *TMesh::app_version = NULL;
+const char *TMesh::app_year = NULL;
+const char *TMesh::app_authors = NULL;
+const char *TMesh::app_url = NULL;
+const char *TMesh::app_maillist = NULL;
 const char *TMesh::filename = NULL;
 bool TMesh::quiet = false;
 

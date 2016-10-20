@@ -138,11 +138,11 @@ int Basic_TMesh::duplicateNonManifoldVertices()
   ve = e->v1->VE();
   if (ve->containsNode(e) == NULL)
   {
-   v = newVertex(e->v1);		//!  
-   v->info = e->v1->info;		//! < AMF_CHANGE 1.1-2 > 
-   v->mask = 0;					//!  
+   v = newVertex(e->v1);		//!
+   v->info = e->v1->info;		//! < AMF_CHANGE 1.1-2 >
+   v->mask = 0;					//!
    V.appendHead(v);
-   
+
    FOREACHVEEDGE(ve, f, m) f->replaceVertex(e->v1, v);
    v->e0 = e->v1->e0;
    e->v1->e0 = e;
@@ -155,10 +155,10 @@ int Basic_TMesh::duplicateNonManifoldVertices()
   ve = e->v2->VE();
   if (ve->containsNode(e) == NULL)
   {
-   v = newVertex(e->v2);		//!  
+   v = newVertex(e->v2);		//!
    v->info = e->v2->info;		//! < AMF_CHANGE 1.1-2 >
    v->mask = 0;					//!
-   V.appendHead(v);			     
+   V.appendHead(v);
 
    FOREACHVEEDGE(ve, f, m) f->replaceVertex(e->v2, v);
    v->e0 = e->v2->e0;
@@ -355,7 +355,7 @@ bool Basic_TMesh::rebuildConnectivity(bool fixconnectivity) //!< AMF_CHANGE 1.1>
  Triangle *t;
  ExtVertex **var = new ExtVertex *[V.numels()];
  int i=0;
- FOREACHVERTEX(v, n) { v->e0 = NULL; var[i] = new ExtVertex(v); v->info = (void *)i; i++; }
+ FOREACHVERTEX(v, n) { v->e0 = NULL; var[i] = new ExtVertex(v); v->info = (void *)(intptr_t)i; i++; }
  int nt = T.numels();
  int *triangles = new int[nt*3];
  i = 0; FOREACHTRIANGLE(t, n)
@@ -964,7 +964,7 @@ int Basic_TMesh::removeOverlappingTriangles()
 	 removeUnlinkedElements();
 	 d_boundaries = d_handles = d_shells = 1;
  }
- 
+
  return nr*2;
 }
 
