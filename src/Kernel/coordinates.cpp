@@ -41,9 +41,11 @@ namespace T_MESH
 
 #ifdef USE_HYBRID_KERNEL
 
-bool coord::use_rationals = false;
+// Default behaviour = FILTERED KERNEL
+bool PM_Rational::use_rationals = false;
+bool PM_Rational::use_filtering = true;
 
-void coord::switchToDouble()
+void PM_Rational::switchToDouble()
 {
 	if (_whv)
 	{
@@ -55,7 +57,7 @@ void coord::switchToDouble()
 	}
 }
 
-void coord::switchToRational()
+void PM_Rational::switchToRational()
 {
 	if (!_whv)
 	{
@@ -66,100 +68,100 @@ void coord::switchToRational()
 	}
 }
 
- void coord::operator+=(const coord& a)
+ void PM_Rational::operator+=(const PM_Rational& a)
 {
 	if (use_rationals) { switchToRational(); getVal() += a.toRational(); }
 	else { switchToDouble(); getDVal() += a.toDouble(); }
 }
 
- void coord::operator-=(const coord& a)
+ void PM_Rational::operator-=(const PM_Rational& a)
 {
 	if (use_rationals) { switchToRational(); getVal() -= a.toRational(); }
 	else { switchToDouble(); getDVal() -= a.toDouble(); }
 }
 
- void coord::operator*=(const coord& a)
+ void PM_Rational::operator*=(const PM_Rational& a)
 {
 	if (use_rationals) { switchToRational(); getVal() *= a.toRational(); }
 	else { switchToDouble(); getDVal() *= a.toDouble(); }
 }
 
- void coord::operator/=(const coord& a)
+ void PM_Rational::operator/=(const PM_Rational& a)
 {
 	if (use_rationals) { switchToRational(); getVal() /= a.toRational(); }
 	else { switchToDouble(); getDVal() /= a.toDouble(); }
 }
 
- coord coord::operator+(const coord& a) const
+ PM_Rational PM_Rational::operator+(const PM_Rational& a) const
 {
-	if (use_rationals) return coord(toRational() + a.toRational());
-	else return coord(toDouble() + a.toDouble());
+	if (use_rationals) return PM_Rational(toRational() + a.toRational());
+	else return PM_Rational(toDouble() + a.toDouble());
 }
 
- coord coord::operator-(const coord& a) const
+ PM_Rational PM_Rational::operator-(const PM_Rational& a) const
 {
-	if (use_rationals) return coord(toRational() - a.toRational());
-	else return coord(toDouble() - a.toDouble());
+	if (use_rationals) return PM_Rational(toRational() - a.toRational());
+	else return PM_Rational(toDouble() - a.toDouble());
 }
 
- coord coord::operator*(const coord& a) const
+ PM_Rational PM_Rational::operator*(const PM_Rational& a) const
 {
-	if (use_rationals) return coord(toRational() * a.toRational());
-	else return coord(toDouble() * a.toDouble());
+	if (use_rationals) return PM_Rational(toRational() * a.toRational());
+	else return PM_Rational(toDouble() * a.toDouble());
 }
 
- coord coord::operator/(const coord& a) const
+ PM_Rational PM_Rational::operator/(const PM_Rational& a) const
 {
-	if (use_rationals) return coord(toRational() / a.toRational());
-	else return coord(toDouble() / a.toDouble());
+	if (use_rationals) return PM_Rational(toRational() / a.toRational());
+	else return PM_Rational(toDouble() / a.toDouble());
 }
 
- bool coord::operator==(const coord& a) const
+ bool PM_Rational::operator==(const PM_Rational& a) const
 {
 	 if (_whv || a._whv /*use_rationals*/) return (toRational() == a.toRational());
 	 else return (toDouble() == a.toDouble());
  }
 
- bool coord::operator!=(const coord& a) const
+ bool PM_Rational::operator!=(const PM_Rational& a) const
 {
 	 if (_whv || a._whv /*use_rationals*/) return (toRational() != a.toRational());
 	 else return (toDouble() != a.toDouble());
 }
 
- coord& coord::operator=(const coord& a)
+ PM_Rational& PM_Rational::operator=(const PM_Rational& a)
  {
 	 if (_whv) delete ((EXACT_NT *)_val);
 	 _whv = a._whv; _val = (_whv) ? ((int64_t)new EXACT_NT(a.getVal())) : (a._val);
 	 return *this;
  }
 
- void coord::setFromRational(const EXACT_NT& a)
+ void PM_Rational::setFromRational(const EXACT_NT& a)
  {
 	 if (_whv) delete ((EXACT_NT *)_val);
 	 _whv = 1; _val = (int64_t)new EXACT_NT(a);
  }
 
- bool coord::operator<(const coord& a) const
+ bool PM_Rational::operator<(const PM_Rational& a) const
  {
-	 if (_whv || a._whv /*use_rationals*/) return (toRational() < a.toRational());
+	 if (_whv || a._whv) return (toRational() < a.toRational());
 	 else return (toDouble() < a.toDouble());
  }
 
-bool coord::operator>(const coord& a) const
+bool PM_Rational::operator>(const PM_Rational& a) const
 {
-	if (_whv || a._whv /*use_rationals*/) return (toRational() > a.toRational());
+	if (_whv || a._whv) return (toRational() > a.toRational());
 	else return (toDouble() > a.toDouble());
 }
 
- coord operator-(const coord& a)
+PM_Rational operator-(const PM_Rational& a) // This might be probably changed... do not understand why to switch..
 {
-	if (coord::use_rationals) return coord(-(a.toRational()));
-	else return coord(-(a.toDouble()));
+	if (PM_Rational::isUsingRationals()) return PM_Rational(-(a.toRational()));
+	else return PM_Rational(-(a.toDouble()));
 }
 
-coord ceil(const coord& a)
+PM_Rational ceil(const PM_Rational& a)
 {
-	if (coord::use_rationals)
+	if (PM_Rational::isUsingRationals())
 	{
 		mpz_t n, d, f;
 		mpz_init(n); mpz_init(d); mpz_init(f);
@@ -168,22 +170,22 @@ coord ceil(const coord& a)
 		mpz_set(d, a.toRational().exact().denominator().mpz());
 		mpz_cdiv_q(f, n, d);
 		mpz_clear(n); mpz_clear(d);
-		return coord(EXACT_NT(CGAL::Gmpz(f)));
+		return PM_Rational(EXACT_NT(CGAL::Gmpz(f)));
 #else
 		mpz_set(n, a.toRational().get_num_mpz_t());
 		mpz_set(d, a.toRational().get_den_mpz_t());
 		mpz_cdiv_q(f, n, d);
 		mpz_clear(n); mpz_clear(d);
-		return coord(mpq_class(mpz_class(f)));
+		return PM_Rational(mpq_class(mpz_class(f)));
 #endif
 	}
 	else
-		return coord(::ceil(a.toDouble()));
+		return PM_Rational(::ceil(a.toDouble()));
 }
 
-coord floor(const coord& a)
+PM_Rational floor(const PM_Rational& a)
 {
-	if (coord::use_rationals)
+	if (PM_Rational::isUsingRationals())
 	{
 		mpz_t n, d, f;
 		mpz_init(n); mpz_init(d); mpz_init(f);
@@ -192,32 +194,47 @@ coord floor(const coord& a)
 		mpz_set(d, a.toRational().exact().denominator().mpz());
 		mpz_fdiv_q(f, n, d);
 		mpz_clear(n); mpz_clear(d);
-		return coord(EXACT_NT(CGAL::Gmpz(f)));
+		return PM_Rational(EXACT_NT(CGAL::Gmpz(f)));
 #else
 		mpz_set(n, a.toRational().get_num_mpz_t());
 		mpz_set(d, a.toRational().get_den_mpz_t());
 		mpz_fdiv_q(f, n, d);
 		mpz_clear(n); mpz_clear(d);
-		return coord(mpq_class(mpz_class(f)));
+		return PM_Rational(mpq_class(mpz_class(f)));
 #endif
-	}
-	else
-		return coord(::floor(a.toDouble()));
+	} else
+		return PM_Rational(::floor(a.toDouble()));
 }
 
-extern "C" double orient2d(double *, double *, double *);
-
-coord coord::orient2D(const coord& px, const coord& py, const coord& qx, const coord& qy, const coord& rx, const coord& ry)
+PM_Rational round(const PM_Rational& a)
 {
-	if (use_rationals) return ((px - rx)*(qy - ry) - (py - ry)*(qx - rx));
-	else
+	if (PM_Rational::isUsingRationals())
 	{
-		double pqr[6];
-		pqr[0] = px.toDouble();  pqr[1] = py.toDouble();
-		pqr[2] = qx.toDouble();  pqr[3] = qy.toDouble();
-		pqr[4] = rx.toDouble();  pqr[5] = ry.toDouble();
-		return orient2d(pqr, pqr + 2, pqr + 4);
-	}
+		mpz_t n, d, f, c;
+		mpz_init(n); mpz_init(d); mpz_init(f); mpz_init(c);
+#ifdef USE_CGAL_LAZYNT
+		mpz_set(n, a.toRational().exact().numerator().mpz());
+		mpz_set(d, a.toRational().exact().denominator().mpz());
+		mpz_fdiv_q(f, n, d);
+		mpz_cdiv_q(c, n, d);
+		mpz_clear(n); mpz_clear(d);
+		PM_Rational fr = PM_Rational(EXACT_NT(CGAL::Gmpz(f)));
+		PM_Rational cr = PM_Rational(EXACT_NT(CGAL::Gmpz(c)));
+		mpz_clear(f); mpz_clear(c);
+		return ((a - fr) < (cr - a)) ? (fr) : (cr);
+#else
+		mpz_set(n, a.toRational().get_num_mpz_t());
+		mpz_set(d, a.toRational().get_den_mpz_t());
+		mpz_fdiv_q(f, n, d);
+		mpz_cdiv_q(c, n, d);
+		mpz_clear(n); mpz_clear(d);
+		PM_Rational fr = PM_Rational(mpq_class(mpz_class(f)));
+		PM_Rational cr = PM_Rational(mpq_class(mpz_class(c)));
+		mpz_clear(f); mpz_clear(c);
+		return ((a - fr) < (cr - a)) ? (fr) : (cr);
+#endif
+	} else
+		return PM_Rational(::round(a.toDouble()));
 }
 
 #endif

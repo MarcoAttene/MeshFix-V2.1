@@ -94,6 +94,8 @@ class TMesh
 
  static void useRationals(bool u);
  static bool isUsingRationals();
+ static void useFiltering(bool u);
+ static bool isUsingFiltering();
 
  //! Returns the status before the switch
  static bool useRationals() { bool t = isUsingRationals(); useRationals(true); return t; }

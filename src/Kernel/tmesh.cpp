@@ -183,17 +183,33 @@ void TMesh::end_progress()
   printf("\n");
 }
 
-void TMesh::useRationals(bool u) 
+void TMesh::useRationals(bool u)
 {
 #ifdef USE_HYBRID_KERNEL
-	coord::use_rationals = u;
+	coord::useRationals(u);
 #endif
 }
 
 bool TMesh::isUsingRationals()
 {
 #ifdef USE_HYBRID_KERNEL
-	return coord::use_rationals;
+	return coord::isUsingRationals();
+#else
+	return false;
+#endif
+}
+
+void TMesh::useFiltering(bool u)
+{
+#ifdef USE_HYBRID_KERNEL
+	coord::useFiltering(u);
+#endif
+}
+
+bool TMesh::isUsingFiltering()
+{
+#ifdef USE_HYBRID_KERNEL
+	return coord::isUsingFiltering();
 #else
 	return false;
 #endif

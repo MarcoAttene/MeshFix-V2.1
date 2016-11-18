@@ -36,8 +36,15 @@
 namespace T_MESH
 {
 
+//! Orientation predicates using filtering on doubles
 extern "C" double orient2d(double *, double *, double *);
 extern "C" double orient3d(double *, double *, double *, double *);
+
+//! Orientation predicates on PM_Rationals
+
+// orient2D: >0 =0 <0 if (p,q,r) are CCW, aligned, CW respectively
+PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rational& qx, const PM_Rational& qy, const PM_Rational& rx, const PM_Rational& ry);
+
 
 //! Geometric point definition
 

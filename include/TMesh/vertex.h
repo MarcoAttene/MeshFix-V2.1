@@ -127,6 +127,22 @@ class Vertex : public Point
  //! otherwise returns NULL.
  Vertex *prevOnBoundary() const;
 
+ //! TRUE iff vertex neighborhood is a flat disk. Always FALSE for boundary vertices.
+ bool isFlat() const;
+
+ //! TRUE iff vertex neighborhood is made of either two flat halfdisks or one flat halfdisk on a rectilinear boundary.
+ //! When TRUE, the two edges may be initialized with the two non-flat incident edges.
+ //! If the two halfdisks are also coplanar, returns TRUE and e1 and e2 are set to NULL.
+ bool isDoubleFlat(Edge **e1, Edge **e2) const;
+
+ //! Unlinks the vertex if it is either Flat() or DoubleFlat(). On success, the function returns TRUE,
+ //! the vertex neighborhood is retriangulated, and the geometric realization does not change.
+ //! If 'check_neighborhood' is 'false', incident triangles are assumed to be neither degenerate nor
+ //! overlapping.
+ //! Attention! The method unlinks the vertex but does not remove it from the Basic_TMesh list. The
+ //! calling function must clear the lists through Basic_TMesh::removeUnlinkedElements().
+ bool removeIfRedundant(bool check_neighborhood = true);
+
  //! Normal at the vertex computed as the sum of incident triangle normals weighted on their incidence angle.
  Point getNormal() const;
 

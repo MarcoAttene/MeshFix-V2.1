@@ -640,7 +640,7 @@ bool SymMatrix4x4::getMinimizer(coord *a, coord *b, coord *c) const
  t = det/(pos-neg);
  if (
 #ifdef USE_HYBRID_KERNEL
-	 (coord::use_rationals && t!=0) ||
+	 (coord::isUsingRationals() && t!=0) ||
 #endif
 	 (FABS(t) >= 1.0e-15))
  {

@@ -522,8 +522,13 @@ int Basic_TMesh::fillSmallBoundaries(int nbe, bool refine_patches)
 
  FOREACHTRIANGLE(t, n) if (IS_VISITED(t)) {is_selection=1; break;}
 
- if (is_selection) FOREACHTRIANGLE(t, n) if (!IS_VISITED(t))
-  {MARK_BIT(t->v1(), 6); MARK_BIT(t->v2(), 6); MARK_BIT(t->v3(), 6);}
+ if (is_selection) {
+	 FOREACHTRIANGLE(t, n) if (!IS_VISITED(t))
+	 {
+		 MARK_BIT(t->v1(), 6); MARK_BIT(t->v2(), 6); MARK_BIT(t->v3(), 6);
+	 }
+ }
+ else FOREACHVERTEX(v, n) UNMARK_BIT(v, 6);
 
  FOREACHVERTEX(v, n)
  {

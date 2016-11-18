@@ -185,7 +185,7 @@ void Basic_TMesh::init(const Basic_TMesh *tin, const bool clone_info)
  Vertex *v, *nv;
  Edge *e, *ne;
  Triangle *t, *nt;
-
+ 
  int i;
  void **t_info = new void *[tin->T.numels()];
  i=0; FOREACHVTTRIANGLE((&(tin->T)), t, n) t_info[i++]=t->info;
@@ -195,7 +195,9 @@ void Basic_TMesh::init(const Basic_TMesh *tin, const bool clone_info)
  i=0; FOREACHVVVERTEX((&(tin->V)), v, n) v_info[i++]=v->info;
 
  FOREACHVVVERTEX((&(tin->V)), v, n)
-  {nv=newVertex(v); V.appendTail(nv); v->info = nv;}
+ {
+	 nv = newVertex(v); V.appendTail(nv); v->info = nv; 
+ }
 
  FOREACHVEEDGE((&(tin->E)), e, n)
   {ne=newEdge((Vertex *)e->v1->info, (Vertex *)e->v2->info); E.appendTail(ne); e->info = ne;}
@@ -289,6 +291,7 @@ void Basic_TMesh::init(const Triangle *t0, const bool keep_reference)
 
 Basic_TMesh *Basic_TMesh::split()
 {
+ if (T.numels() == 0) return NULL;
  deselectTriangles();
  Triangle *t = (Triangle *)T.head()->data;
  selectConnectedComponent(t);
@@ -619,6 +622,16 @@ int Basic_TMesh::removeVertices()
 }
 
 
+//// Removes all the vertices that can be deleted without changing the geometric realization. O(N).
+int Basic_TMesh::removeRedundantVertices()
+{
+	Node *n;
+	Vertex *v;
+	int fv = 0;
+	FOREACHVERTEX(v, n) if (v->removeIfRedundant()) fv++;
+	removeUnlinkedElements();
+	return fv;
+}
 
 //////////////////////////////////////////////////////////////////
 //                                                              //
@@ -1127,6 +1140,7 @@ void Basic_TMesh::moveMeshElements(Basic_TMesh *t, bool delInput)
 	if(delInput)	delete t;					
 }
 
+
 //////////////////////////////////////////////////////////////////
 //                                                              //
 //    R E G I O N   M A N I P U L A T I O N                     //
@@ -1454,12 +1468,15 @@ void Basic_TMesh::quantize(int nc)
 	Vertex *v;
 	Node *n;
 	normalize(nc);
+	bool stat = TMesh::isUsingRationals();
+	TMesh::useRationals(false);
 	FOREACHVERTEX(v, n)
 	{
 		v->x = coord(TMESH_TO_INT(v->x));
 		v->y = coord(TMESH_TO_INT(v->y));
 		v->z = coord(TMESH_TO_INT(v->z));
 	}
+	TMesh::useRationals(stat);
 }
 
 
@@ -1731,7 +1748,7 @@ void Basic_TMesh::eulerUpdate()
 	{
 		n_shells++;
 		triList.appendHead(t);
-		MARK_BIT(t, 5);
+		MARK_BIT(t, 5);	
 
 		while (triList.numels())
 		{
@@ -1971,8 +1988,6 @@ bool Basic_TMesh::isInnerPoint(Point& p) const
 	Edge *e, *closest_edge = NULL;
 	Vertex *closest_vertex = NULL;
 
-	double dcp[2]; dcp[0] = TMESH_TO_DOUBLE(p.y); dcp[1] = TMESH_TO_DOUBLE(p.z);
-	double dcv[6];
 	coord o1, o2, o3;
 	FOREACHTRIANGLE(t, n)
 	{
@@ -1981,23 +1996,9 @@ bool Basic_TMesh::isInnerPoint(Point& p) const
 			continue;
 		if (((v1->z > p.z && v2->z > p.z) || (v1->z < p.z && v2->z < p.z)) && ((v1->z > p.z && v3->z > p.z) || (v1->z < p.z && v3->z < p.z)))
 			continue;
-#ifdef USE_HYBRID_KERNEL
-		if (coord::use_rationals)
-		{
-			o1 = coord::orient2D(p.y, p.z, v1->y, v1->z, v2->y, v2->z);
-			o2 = coord::orient2D(p.y, p.z, v2->y, v2->z, v3->y, v3->z);
-			o3 = coord::orient2D(p.y, p.z, v3->y, v3->z, v1->y, v1->z);
-		}
-		else
-		{
-#endif
-			dcv[0] = TMESH_TO_DOUBLE(v1->y); dcv[1] = TMESH_TO_DOUBLE(v1->z); dcv[2] = TMESH_TO_DOUBLE(v2->y); dcv[3] = TMESH_TO_DOUBLE(v2->z); dcv[4] = TMESH_TO_DOUBLE(v3->y); dcv[5] = TMESH_TO_DOUBLE(v3->z);
-			o1 = orient2d(dcp, dcv, dcv + 2);
-			o2 = orient2d(dcp, dcv + 2, dcv + 4);
-			o3 = orient2d(dcp, dcv + 4, dcv);
-#ifdef USE_HYBRID_KERNEL
-		}
-#endif
+		o1 = orient2D(p.y, p.z, v1->y, v1->z, v2->y, v2->z);
+		o2 = orient2D(p.y, p.z, v2->y, v2->z, v3->y, v3->z);
+		o3 = orient2D(p.y, p.z, v3->y, v3->z, v1->y, v1->z);
 
 		if (o1 == 0 && o2 == 0 && o3 == 0) continue; // Degenerate triangle. Skip.
 		else if (o1 == 0 && o2 == 0)
@@ -2079,9 +2080,9 @@ bool Basic_TMesh::isInnerPoint(Point& p) const
 	//		v1 = t->v1(); v2 = t->v2(); v3 = t->v3();
 	//		if ((IS_BIT(v1, 5) == IS_BIT(v2, 5) && IS_BIT(v1, 5) == IS_BIT(v3, 5))) continue;
 	//		if ((IS_BIT(v1, 6) == IS_BIT(v2, 6) && IS_BIT(v1, 6) == IS_BIT(v3, 6))) continue;
-	//		coord o1 = coord::orient2D(p.y, p.z, v1->y, v1->z, v2->y, v2->z);
-	//		coord o2 = coord::orient2D(p.y, p.z, v2->y, v2->z, v3->y, v3->z);
-	//		coord o3 = coord::orient2D(p.y, p.z, v3->y, v3->z, v1->y, v1->z);
+	//		coord o1 = orient2D(p.y, p.z, v1->y, v1->z, v2->y, v2->z);
+	//		coord o2 = orient2D(p.y, p.z, v2->y, v2->z, v3->y, v3->z);
+	//		coord o3 = orient2D(p.y, p.z, v3->y, v3->z, v1->y, v1->z);
 	//		if (o1 == 0 || o2 == 0 || o3 == 0) { singular_case = true; break; }
 	//		if ((o1 > 0 && o2 > 0 && o3 > 0) || (o1 < 0 && o2 < 0 && o3 < 0))
 	//		{

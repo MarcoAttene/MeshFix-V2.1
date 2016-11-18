@@ -177,18 +177,18 @@ class Basic_TMesh
 		TMESH_VIRTUAL Edge *duplicateEdge(Edge *e);
 
 	public:
-		TMESH_VIRTUAL Vertex *	newVertex();							
-		TMESH_VIRTUAL Vertex *	newVertex(const coord &, const coord &, const coord &);	
-		TMESH_VIRTUAL Vertex *	newVertex(Point *);						
-		TMESH_VIRTUAL Vertex *	newVertex(Point &);						
-		TMESH_VIRTUAL Vertex *	newVertex(Vertex *);					
-		TMESH_VIRTUAL Edge *		newEdge(Vertex *, Vertex *);			
-		TMESH_VIRTUAL Edge *		newEdge(Edge *);						
-		TMESH_VIRTUAL Triangle *	newTriangle();							
-		TMESH_VIRTUAL Triangle *	newTriangle(Edge *, Edge *, Edge *);	
-		TMESH_VIRTUAL Basic_TMesh *	newObject() const { return new Basic_TMesh(); }	
-		TMESH_VIRTUAL Basic_TMesh *	newObject(const Basic_TMesh *tm, const bool ci = false) const { return new Basic_TMesh(tm, ci); }	
-		TMESH_VIRTUAL Basic_TMesh *   newObject(const char *s) const { return new Basic_TMesh(s); } 	
+		TMESH_VIRTUAL Vertex *	newVertex();
+		TMESH_VIRTUAL Vertex *	newVertex(const coord &, const coord &, const coord &);
+		TMESH_VIRTUAL Vertex *	newVertex(Point *);
+		TMESH_VIRTUAL Vertex *	newVertex(Point &);
+		TMESH_VIRTUAL Vertex *	newVertex(Vertex *);
+		TMESH_VIRTUAL Edge *		newEdge(Vertex *, Vertex *);
+		TMESH_VIRTUAL Edge *		newEdge(Edge *);
+		TMESH_VIRTUAL Triangle *	newTriangle();
+		TMESH_VIRTUAL Triangle *	newTriangle(Edge *, Edge *, Edge *);
+		TMESH_VIRTUAL Basic_TMesh *	newObject() const { return new Basic_TMesh(); }
+		TMESH_VIRTUAL Basic_TMesh *	newObject(const Basic_TMesh *tm, const bool ci = false) const { return new Basic_TMesh(tm, ci); }
+		TMESH_VIRTUAL Basic_TMesh *   newObject(const char *s) const { return new Basic_TMesh(s); }
 
 		//! Save the triangle mesh to file 'filename'.
 
@@ -345,6 +345,8 @@ class Basic_TMesh
 		//! Removes all the unlinked elements from the lists. Returns the number of removed elements. O(N).
 		int removeUnlinkedElements() { return removeTriangles() + removeEdges() + removeVertices(); }
 
+		//! Removes all the vertices that can be deleted without changing the geometric realization. O(N).
+		int removeRedundantVertices();
 
 		/////////////////////////////////////////////////////////////////////////////
 		//
@@ -564,6 +566,10 @@ class Basic_TMesh
 		//! result is undetermined otherwise.
 		bool isInnerPoint(Point& p) const;
 
+		//! Performs one step of Loop subdivision. If 'midpoint' is set, only the connectivity
+		//! is subdivided, whereas the surface shape is kept unchanged.
+		void loopSubdivision(bool midpoint =false);
+
 		/////////////////////////////////////////////////////////////////////////////
 		//
 		// Surface topology manipulation (Implemented in "MESH_STRUCTURE/tin.cpp")
@@ -741,7 +747,7 @@ class Basic_TMesh
 		//! sampling density of the surroundings. If 't0' is not NULL, only the
 		//! selected region containing 't0' is refined. Returns the number of
 		//! vertices inserted.
-		TMESH_VIRTUAL int refineSelectedHolePatches(Triangle *t0 =NULL);
+		TMESH_VIRTUAL int refineSelectedHolePatches(Triangle *t0 =NULL);		
 
 		//! Retriangulates the vertex neghborhood based on heuristics.
 		int retriangulateVT(Vertex *);

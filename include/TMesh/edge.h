@@ -132,10 +132,23 @@ class Edge
  //! If the edge is on boundary or if the edge after the swap already exists return FALSE and do not change anything.
  //! Return TRUE on success.
  //! If 'fast' is set, no topological check is performed.
- TMESH_VIRTUAL bool swap(const bool fast=0); //!< AMF_CHANGE 1.1-2>
+ TMESH_VIRTUAL bool swap(const bool fast=0);
 
  //! Edge collapse.
 
+ //! This method collapses the edge and  updates  the  connectivity  of  the
+ //! neighboring  elements consistently. The edge will be contracted into its
+ //! first vertex v1 (or v2, for collapseOnV2()).
+ //! This method returns v1 (or v2) on success, NULL otherwise.
+ //! Failure occurs when the collapse would produce an invalid connectivity graph.
+ //! Caution! If the collapse succeeds the
+ //! edge,  its  incident  triangles and the second vertex are unlinked, but
+ //! they are still present in the lists of the Basic_TMesh.
+ //! The calling function is responsible of removing them from the lists using
+ //! the method removeUnlinkedElements().
+ Vertex *collapseOnV1();
+ Vertex *collapseOnV2();
+ 
  //! This method collapses the edge and  updates  the  connectivity  of  the
  //! neighboring  elements consistently. The edge will be transformed into a
  //! vertex with the coordinates of 'p'.

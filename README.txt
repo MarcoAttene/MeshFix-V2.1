@@ -1,5 +1,5 @@
 ----------------------------
-MeshFIX - Version 2.0                                                          
+MeshFIX - Version 2.1                                                          
 ----------------------------
 
 by Marco Attene
