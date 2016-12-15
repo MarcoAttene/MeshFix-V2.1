@@ -302,6 +302,98 @@ Vertex *Vertex::prevOnBoundary() const
  return NULL;
 }
 
+//// TRUE iff vertex neighborhood is a flat disk. Always FALSE for boundary vertices.
+bool Vertex::isFlat() const
+{
+	List *ve = VE();
+	Node *n;
+	Edge *e;
+
+	FOREACHVEEDGE(ve, e, n)
+	if (e->getConvexity() != 0) { delete ve; return false; }
+
+	delete ve;
+	return true;
+}
+
+//// TRUE iff vertex neighborhood is made of either two flat halfdisks or one flat halfdisk on a rectilinear boundary.
+bool Vertex::isDoubleFlat(Edge **e1, Edge **e2) const
+{
+	List *ve = VE();
+	Node *n;
+	Edge *e;
+	int nne = 0;
+	*e1 = *e2 = NULL;
+
+	FOREACHVEEDGE(ve, e, n)
+	if (e->getConvexity() != 0)
+	{
+		if (++nne > 2) { delete ve; return false; }
+		else if (nne == 1) *e1 = e;
+		else *e2 = e;
+	}
+	delete ve;
+	if (nne == 0) return true; // This means that vertex is flat
+	if (nne == 1) return false; // This should not be possible, but just in case...
+	return (!((*e1)->oppositeVertex(this)->exactMisalignment(this, (*e2)->oppositeVertex(this))));
+}
+
+//// Unlinks the vertex if it is either Flat() or DoubleFlat(). On success, the function returns TRUE,
+//// the vertex neighborhood is retriangulated, and the geometric realization does not change.
+bool Vertex::removeIfRedundant(bool check_neighborhood)
+{
+	Edge *e, *e1 = NULL, *e2 = NULL;
+	if (!isDoubleFlat(&e1, &e2)) return false;
+
+	Node *n;
+	Vertex *vo1, *vo2;
+	List *ve;
+
+	if (check_neighborhood)
+	{
+		ve = VT();
+		Triangle *t;
+		FOREACHVTTRIANGLE(ve, t, n) if (t->isExactlyDegenerate()) { delete ve; return false; }
+		delete ve;
+		ve = VE();
+		FOREACHVEEDGE(ve, e, n) if (e->overlaps()) { delete ve; return false; }
+	} else ve = VE();
+
+	if (e1 != NULL) ve->removeNode(e1); // means isDoubleFlat()
+	if (e2 != NULL) ve->removeNode(e2); // means isDoubleFlat()
+	if (e2 != NULL && *e1->oppositeVertex(this) == *e2->oppositeVertex(this)) { delete ve; return false; }
+
+	while (1)
+	{
+		FOREACHVEEDGE(ve, e, n)
+		{
+			vo1 = e->t1->oppositeVertex(e);
+			vo2 = e->t2->oppositeVertex(e);
+			if (!e->v1->exactSameSideOnPlane(e->v2, vo1, vo2) && vo1->exactMisalignment(e->v1, vo2) && vo1->exactMisalignment(e->v2, vo2))
+			{
+				if (!e->swap()) { delete ve; return false; }
+				break;
+			}
+		}
+		if (n != NULL) ve->removeCell(n);
+		else break;
+	}
+
+	if (e1 != NULL) e = e1; // means isDoubleFlat()
+	else if (ve->numels() == 3) e = (Edge *)ve->head()->data;
+	else
+	{
+		FOREACHVEEDGE(ve, e, n)
+		if (!e->t1->oppositeVertex(e)->exactMisalignment(this, e->t2->oppositeVertex(e))) break;
+		if (n == NULL) { delete ve; return false; } // Should not happen...
+		else e = (Edge *)((n == ve->head()) ? (ve->tail()) : (n->prev()))->data;
+	}
+	delete ve;
+
+	if (e->v1 == this) e->invert();
+	if (e->collapseOnV1() == NULL) return false; // This is a very rare case. Should be treated, but does not hurt too much.
+	else return true;
+}
 
 ///// Vertex normal as weighted average of the incident triangle normals ////
 ///// The weight is the incidence angle.				 ////

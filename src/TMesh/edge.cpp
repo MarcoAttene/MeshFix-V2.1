@@ -166,7 +166,7 @@ bool Edge::swap(const bool fast)
 
 ////////////////////////// Edge collapse ////////////////////////
 
-bool Edge::collapse(const Point& p)
+Vertex *Edge::collapseOnV1()
 {
  Edge *e;
  Node *n;
@@ -185,12 +185,12 @@ bool Edge::collapse(const Point& p)
  Triangle *ta4 = (e4 != NULL)?(e4->oppositeTriangle(t2)):(NULL);
 
  if (v1->isOnBoundary() && v2->isOnBoundary())
-  if (!(((ta1 || ta2) && !ta3 && !ta4) || ((ta3 || ta4) && !ta1 && !ta2))) return 0;
+  if (!(((ta1 || ta2) && !ta3 && !ta4) || ((ta3 || ta4) && !ta1 && !ta2))) return NULL;
 
  if (ta1 != NULL && ta2 != NULL && ta1->oppositeVertex(e1) == ta2->oppositeVertex(e2))
-  return 0;
+  return NULL;
  if (ta3 != NULL && ta4 != NULL && ta3->oppositeVertex(e3) == ta4->oppositeVertex(e4))
-  return 0;
+  return NULL;
 
  if (ta1 == NULL && ta2 == NULL) v1->e0 = e3;
  else v1->e0 = e2;
@@ -202,7 +202,7 @@ bool Edge::collapse(const Point& p)
  FOREACHVEEDGE(ve, e, n)
  {
   tv = e->oppositeVertex(v2);
-  if (tv != v3 && tv != v4 && tv->getEdge(v1) != NULL) {delete(ve); return 0;}
+  if (tv != v3 && tv != v4 && tv->getEdge(v1) != NULL) {delete(ve); return NULL;}
  }
  FOREACHVEEDGE(ve, e, n) if (e != this) e->replaceVertex(v2, v1);
  delete(ve);
@@ -230,11 +230,26 @@ bool Edge::collapse(const Point& p)
   e3->v1 = e3->v2 = NULL;
  }
 
- v1->setValue(&p);					// Average the collapse
-
+ v4 = v1;							// This is the remaining vertex to be returned
+ 
  v2 = v1 = NULL;					// this edge must be removed
 
- return 1;
+ return v4;
+}
+
+Vertex *Edge::collapseOnV2()
+{
+	invert();
+	return collapseOnV1();
+}
+
+bool Edge::collapse(const Point& p)
+{
+ Vertex *r = collapseOnV1();
+ if (r==NULL) return false;
+ else r->setValue(&p);					// Average the collapse
+
+ return true;
 }
 
 bool Edge::collapse()

@@ -38,6 +38,191 @@ namespace T_MESH
 
 const Point INFINITE_POINT(DBL_MAX, DBL_MAX, DBL_MAX);
 
+#ifdef USE_HYBRID_KERNEL
+
+PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rational& qx, const PM_Rational& qy, const PM_Rational& rx, const PM_Rational& ry)
+{
+	if (!PM_Rational::isUsingFiltering() && !PM_Rational::isUsingRationals())
+	{
+		return ((px - rx)*(qy - ry) - (py - ry)*(qx - rx));
+	}
+	else if (px.isOfDoubleType() && py.isOfDoubleType() && qx.isOfDoubleType() && qy.isOfDoubleType() && rx.isOfDoubleType() && ry.isOfDoubleType())
+	{
+		double pqr[6];
+		pqr[0] = px.getDVal();  pqr[1] = py.getDVal();
+		pqr[2] = qx.getDVal();  pqr[3] = qy.getDVal();
+		pqr[4] = rx.getDVal();  pqr[5] = ry.getDVal();
+		return orient2d(pqr, pqr + 2, pqr + 4);
+	}
+	else if (PM_Rational::isUsingRationals())
+	{
+		return ((px - rx)*(qy - ry) - (py - ry)*(qx - rx));
+	}
+	else
+	{
+		PM_Rational::use_rationals = true;
+		PM_Rational O = ((px - rx)*(qy - ry) - (py - ry)*(qx - rx));
+		PM_Rational::use_rationals = false;
+		return O;
+	}
+}
+
+PM_Rational orient3D(const Point *t, const Point *a, const Point *b, const Point *c)
+{
+	if (!PM_Rational::isUsingFiltering() && !PM_Rational::isUsingRationals())
+	{
+		return TMESH_DETERMINANT3X3(t->x - c->x, t->y - c->y, t->z - c->z, a->x - c->x, a->y - c->y, a->z - c->z, b->x - c->x, b->y - c->y, b->z - c->z);
+	} else if (a->x.isOfDoubleType() && a->y.isOfDoubleType() && a->z.isOfDoubleType() &&
+		t->x.isOfDoubleType() && t->y.isOfDoubleType() && t->z.isOfDoubleType() &&
+		b->x.isOfDoubleType() && b->y.isOfDoubleType() && b->z.isOfDoubleType() &&
+		c->x.isOfDoubleType() && c->y.isOfDoubleType() && c->z.isOfDoubleType())
+	{
+		double p1[3], p2[3], p3[3], p4[3];
+		p1[0] = (t->x).getDVal(); p1[1] = (t->y).getDVal(); p1[2] = (t->z).getDVal();
+		p2[0] = (a->x).getDVal(); p2[1] = (a->y).getDVal(); p2[2] = (a->z).getDVal();
+		p3[0] = (b->x).getDVal(); p3[1] = (b->y).getDVal(); p3[2] = (b->z).getDVal();
+		p4[0] = (c->x).getDVal(); p4[1] = (c->y).getDVal(); p4[2] = (c->z).getDVal();
+		return orient3d(p1, p2, p3, p4);
+	} else if (PM_Rational::isUsingRationals())
+	{
+		return TMESH_DETERMINANT3X3(t->x - c->x, t->y - c->y, t->z - c->z, a->x - c->x, a->y - c->y, a->z - c->z, b->x - c->x, b->y - c->y, b->z - c->z);
+	} else
+	{
+		PM_Rational::use_rationals = true;
+		PM_Rational O = TMESH_DETERMINANT3X3(t->x - c->x, t->y - c->y, t->z - c->z, a->x - c->x, a->y - c->y, a->z - c->z, b->x - c->x, b->y - c->y, b->z - c->z);
+		PM_Rational::use_rationals = false;
+		return O;
+	}
+}
+
+#else
+
+PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rational& qx, const PM_Rational& qy, const PM_Rational& rx, const PM_Rational& ry)
+{
+//	return ((px - rx)*(qy - ry) - (py - ry)*(qx - rx));
+
+	double pqr[6];
+	pqr[0] = TMESH_TO_DOUBLE(px);  pqr[1] = TMESH_TO_DOUBLE(py);
+	pqr[2] = TMESH_TO_DOUBLE(qx);  pqr[3] = TMESH_TO_DOUBLE(qy);
+	pqr[4] = TMESH_TO_DOUBLE(rx);  pqr[5] = TMESH_TO_DOUBLE(ry);
+	return orient2d(pqr, pqr + 2, pqr + 4);
+}
+
+PM_Rational orient3D(const Point *t, const Point *a, const Point *b, const Point *c)
+{
+//	return TMESH_DETERMINANT3X3(t->x - c->x, t->y - c->y, t->z - c->z, a->x - c->x, a->y - c->y, a->z - c->z, b->x - c->x, b->y - c->y, b->z - c->z);
+
+	double p1[3], p2[3], p3[3], p4[3];
+	p1[0] = TMESH_TO_DOUBLE(t->x); p1[1] = TMESH_TO_DOUBLE(t->y); p1[2] = TMESH_TO_DOUBLE(t->z);
+	p2[0] = TMESH_TO_DOUBLE(a->x); p2[1] = TMESH_TO_DOUBLE(a->y); p2[2] = TMESH_TO_DOUBLE(a->z);
+	p3[0] = TMESH_TO_DOUBLE(b->x); p3[1] = TMESH_TO_DOUBLE(b->y); p3[2] = TMESH_TO_DOUBLE(b->z);
+	p4[0] = TMESH_TO_DOUBLE(c->x); p4[1] = TMESH_TO_DOUBLE(c->y); p4[2] = TMESH_TO_DOUBLE(c->z);
+	return orient3d(p1, p2, p3, p4);
+}
+
+#endif
+
+coord Point::exactOrientation(const Point *a, const Point *b, const Point *c) const
+{
+	return orient3D(this, a, b, c);
+}
+
+
+////////////// Alignment check /////////////
+
+bool Point::exactMisalignment(const Point *A, const Point *B) const
+{
+	if (orient2D(x, y, A->x, A->y, B->x, B->y) != 0) return true;
+	if (orient2D(y, z, A->y, A->z, B->y, B->z) != 0) return true;
+	if (orient2D(z, x, A->z, A->x, B->z, B->x) != 0) return true;
+
+	return false;
+}
+
+bool Point::exactSameSideOnPlane(const Point *Q, const Point *A, const Point *B) const
+{
+		coord o1, o2;
+		int s1, s2;
+
+		o1 = orient2D(x, y, A->x, A->y, B->x, B->y);
+		o2 = orient2D(Q->x, Q->y, A->x, A->y, B->x, B->y);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(y, z, A->y, A->z, B->y, B->z);
+		o2 = orient2D(Q->y, Q->z, A->y, A->z, B->y, B->z);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(z, x, A->z, A->x, B->z, B->x);
+		o2 = orient2D(Q->z, Q->x, A->z, A->x, B->z, B->x);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		return true;
+}
+
+// Returns true if the coplanar point 'p' is in the inner area of 't'.
+// Undetermined if p and t are not coplanar.
+bool Point::pointInInnerTriangle(const Point *p, const Point *v1, const Point *v2, const Point *v3)
+{
+	//if (!p->exactSameSideOnPlane(v1, v2, v3)) return false;
+	//if (!p->exactSameSideOnPlane(v2, v3, v1)) return false;
+	//if (!p->exactSameSideOnPlane(v3, v1, v2)) return false;
+	//return true;
+
+	// Less readable, but slightly more efficient (12 predicates instead of 18)
+
+		coord o1, o2, oo2, oo4, oo6;
+		int s1, s2;
+
+		o1 = orient2D(p->x, p->y, v2->x, v2->y, v3->x, v3->y);
+		o2 = oo2 = orient2D(v1->x, v1->y, v2->x, v2->y, v3->x, v3->y);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->y, p->z, v2->y, v2->z, v3->y, v3->z);
+		o2 = oo4 = orient2D(v1->y, v1->z, v2->y, v2->z, v3->y, v3->z);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->z, p->x, v2->z, v2->x, v3->z, v3->x);
+		o2 = oo6 = orient2D(v1->z, v1->x, v2->z, v2->x, v3->z, v3->x);
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->x, p->y, v3->x, v3->y, v1->x, v1->y);
+		o2 = oo2,
+			s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->y, p->z, v3->y, v3->z, v1->y, v1->z);
+		o2 = oo4;
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->z, p->x, v3->z, v3->x, v1->z, v1->x);
+		o2 = oo6;
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->x, p->y, v1->x, v1->y, v2->x, v2->y);
+		o2 = oo2;
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->y, p->z, v1->y, v1->z, v2->y, v2->z);
+		o2 = oo4;
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+		o1 = orient2D(p->z, p->x, v1->z, v1->x, v2->z, v2->x);
+		o2 = oo6;
+		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
+		if (s1 != s2) return false;
+
+	return true;
+}
 
 //////// Lexicographic Point comparison //////////
 
@@ -117,40 +302,6 @@ void Point::project(const Point *nor)
 {
  Point pr = (*this)-((*nor)*((*this)*(*nor)));
  x = pr.x; y = pr.y; z = pr.z;
-}
-
-
-////////////// Alignment check /////////////
-
-bool Point::exactMisalignment(const Point *A, const Point *B) const
-{
-#ifdef USE_HYBRID_KERNEL
-	if (coord::use_rationals)
-	{
-		if (coord::orient2D(x, y, A->x, A->y, B->x, B->y) != 0) return true;
-		if (coord::orient2D(y, z, A->y, A->z, B->y, B->z) != 0) return true;
-		if (coord::orient2D(z, x, A->z, A->x, B->z, B->x) != 0) return true;
-	}
-	else
-	{
-#endif
-		double dc[10];
-
-		dc[0] = TMESH_TO_DOUBLE(x); dc[1] = TMESH_TO_DOUBLE(y);
-		dc[3] = TMESH_TO_DOUBLE(A->x); dc[4] = TMESH_TO_DOUBLE(A->y);
-		dc[6] = TMESH_TO_DOUBLE(B->x); dc[7] = TMESH_TO_DOUBLE(B->y);
-		if (orient2d(dc, dc + 3, dc + 6) != 0) return true;
-
-		dc[2] = TMESH_TO_DOUBLE(z); dc[5] = TMESH_TO_DOUBLE(A->z); dc[8] = TMESH_TO_DOUBLE(B->z);
-		if (orient2d(dc + 1, dc + 4, dc + 7) != 0) return true;
-
-		dc[9] = dc[6]; dc[6] = dc[3];  dc[3] = dc[0];
-		if (orient2d(dc + 2, dc + 5, dc + 8) != 0) return true;
-#ifdef USE_HYBRID_KERNEL
-	}
-#endif
-
-	return false;
 }
 
 
@@ -343,81 +494,6 @@ int Point::closestPoints(const Point *v1, const Point *p1, const Point *p2, Poin
 }
 
 
-bool Point::exactSameSideOnPlane(const Point *Q, const Point *A, const Point *B) const
-{
-#ifdef USE_HYBRID_KERNEL
-	if (coord::use_rationals)
-	{
-		coord o1, o2;
-		int s1, s2;
-
-		o1 = coord::orient2D(x, y, A->x, A->y, B->x, B->y);
-		o2 = coord::orient2D(Q->x, Q->y, A->x, A->y, B->x, B->y);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(y, z, A->y, A->z, B->y, B->z);
-		o2 = coord::orient2D(Q->y, Q->z, A->y, A->z, B->y, B->z);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(z, x, A->z, A->x, B->z, B->x);
-		o2 = coord::orient2D(Q->z, Q->x, A->z, A->x, B->z, B->x);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-	}
-	else
-	{
-#endif
-		double dc[13], o1, o2;
-		int s1, s2;
-
-		dc[0] = TMESH_TO_DOUBLE(x); dc[1] = TMESH_TO_DOUBLE(y);
-		dc[3] = TMESH_TO_DOUBLE(A->x); dc[4] = TMESH_TO_DOUBLE(A->y);
-		dc[6] = TMESH_TO_DOUBLE(B->x); dc[7] = TMESH_TO_DOUBLE(B->y);
-		dc[9] = TMESH_TO_DOUBLE(Q->x); dc[10] = TMESH_TO_DOUBLE(Q->y);
-		o1 = orient2d(dc, dc+3, dc+6);
-		o2 = orient2d(dc+9, dc+3, dc+6);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		dc[2] = TMESH_TO_DOUBLE(z); dc[5] = TMESH_TO_DOUBLE(A->z); dc[8] = TMESH_TO_DOUBLE(B->z); dc[11] = TMESH_TO_DOUBLE(Q->z);
-		o1 = orient2d(dc+1, dc+4, dc+7);
-		o2 = orient2d(dc+10, dc+4, dc+7);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		dc[12] = dc[9]; dc[9] = dc[6]; dc[6] = dc[3];  dc[3] = dc[0];
-		o1 = orient2d(dc+2, dc+5, dc+8);
-		o2 = orient2d(dc+11, dc+5, dc+8);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-#ifdef USE_HYBRID_KERNEL
-	}
-#endif
-	return true;
-}
-
-coord Point::exactOrientation(const Point *a, const Point *b, const Point *c) const
-{
-#ifdef USE_HYBRID_KERNEL
-	if (coord::use_rationals)
-	{
-	 return TMESH_DETERMINANT3X3(x - c->x, y - c->y, z - c->z, a->x - c->x, a->y - c->y, a->z - c->z, b->x - c->x, b->y - c->y, b->z - c->z);
-	}
-	else
-	{
-#endif
-	 double p1[3], p2[3], p3[3], p4[3];
-	 p1[0] = TMESH_TO_DOUBLE(x);    p1[1] = TMESH_TO_DOUBLE(y);    p1[2] = TMESH_TO_DOUBLE(z);
-	 p2[0] = TMESH_TO_DOUBLE(a->x); p2[1] = TMESH_TO_DOUBLE(a->y); p2[2] = TMESH_TO_DOUBLE(a->z);
-	 p3[0] = TMESH_TO_DOUBLE(b->x); p3[1] = TMESH_TO_DOUBLE(b->y); p3[2] = TMESH_TO_DOUBLE(b->z);
-	 p4[0] = TMESH_TO_DOUBLE(c->x); p4[1] = TMESH_TO_DOUBLE(c->y); p4[2] = TMESH_TO_DOUBLE(c->z);
-	 return orient3d(p1, p2, p3, p4);
-#ifdef USE_HYBRID_KERNEL
-	}
-#endif
-}
 
 // Returns the point of intersection between the two lines defined by (p,q) and (r,s) respectively
 // Return INFINITE_POINT is lines are parallel or if p==q or r==s
@@ -478,129 +554,6 @@ bool Point::pointInInnerSegment(const Point *p, const Point *v1, const Point *v2
 bool Point::pointInSegment(const Point *p, const Point *v1, const Point *v2)
 {
 	return ((*p) == (*(v1)) || (*p) == (*(v2)) || Point::pointInInnerSegment(p, v1, v2));
-}
-
-// Returns true if the coplanar point 'p' is in the inner area of 't'.
-// Undetermined if p and t are not coplanar.
-bool Point::pointInInnerTriangle(const Point *p, const Point *v1, const Point *v2, const Point *v3)
-{
-	//if (!p->exactSameSideOnPlane(v1, v2, v3)) return false;
-	//if (!p->exactSameSideOnPlane(v2, v3, v1)) return false;
-	//if (!p->exactSameSideOnPlane(v3, v1, v2)) return false;
-	//return true;
-
-	// Less readable, but slightly more efficient (12 predicates instead of 18)
-
-#ifdef USE_HYBRID_KERNEL
-	if (coord::use_rationals)
-	{
-		coord o1, o2, oo2, oo4, oo6;
-		int s1, s2;
-
-		o1 = coord::orient2D(p->x, p->y, v2->x, v2->y, v3->x, v3->y);
-		o2 = oo2 = coord::orient2D(v1->x, v1->y, v2->x, v2->y, v3->x, v3->y);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->y, p->z, v2->y, v2->z, v3->y, v3->z);
-		o2 = oo4 = coord::orient2D(v1->y, v1->z, v2->y, v2->z, v3->y, v3->z);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->z, p->x, v2->z, v2->x, v3->z, v3->x);
-		o2 = oo6 = coord::orient2D(v1->z, v1->x, v2->z, v2->x, v3->z, v3->x);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->x, p->y, v3->x, v3->y, v1->x, v1->y);
-		o2 = oo2,
-			s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->y, p->z, v3->y, v3->z, v1->y, v1->z);
-		o2 = oo4;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->z, p->x, v3->z, v3->x, v1->z, v1->x);
-		o2 = oo6;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->x, p->y, v1->x, v1->y, v2->x, v2->y);
-		o2 = oo2;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->y, p->z, v1->y, v1->z, v2->y, v2->z);
-		o2 = oo4;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = coord::orient2D(p->z, p->x, v1->z, v1->x, v2->z, v2->x);
-		o2 = oo6;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-	}
-	else
-	{
-#endif
-		int s1, s2;
-		double dc[16], o1, o2, oo2, oo4, oo6;
-
-		dc[0] = TMESH_TO_DOUBLE(p->x); dc[1] = TMESH_TO_DOUBLE(p->y); dc[2] = TMESH_TO_DOUBLE(p->z); dc[3] = TMESH_TO_DOUBLE(p->x);
-		dc[4] = TMESH_TO_DOUBLE(v1->x); dc[5] = TMESH_TO_DOUBLE(v1->y); dc[6] = TMESH_TO_DOUBLE(v1->z); dc[7] = TMESH_TO_DOUBLE(v1->x);
-		dc[8] = TMESH_TO_DOUBLE(v2->x); dc[9] = TMESH_TO_DOUBLE(v2->y); dc[10] = TMESH_TO_DOUBLE(v2->z); dc[11] = TMESH_TO_DOUBLE(v2->x);
-		dc[12] = TMESH_TO_DOUBLE(v3->x); dc[13] = TMESH_TO_DOUBLE(v3->y); dc[14] = TMESH_TO_DOUBLE(v3->z); dc[15] = TMESH_TO_DOUBLE(v3->x);
-
-		o1 = orient2d(dc, dc+8, dc+12);
-		o2 = oo2 = orient2d(dc+4, dc+8, dc+12);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+1, dc+9, dc+13);
-		o2 = oo4 = orient2d(dc+5, dc+9, dc+13);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+2, dc+10, dc+14);
-		o2 = oo6 = orient2d(dc+6, dc+10, dc+14);
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc, dc+12, dc+4);
-		o2 = oo2,
-			s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+1, dc+13, dc+5);
-		o2 = oo4;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+2, dc+14, dc+6);
-		o2 = oo6;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc, dc+4, dc+8);
-		o2 = oo2;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+1, dc+5, dc+9);
-		o2 = oo4;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-
-		o1 = orient2d(dc+2, dc+6, dc+10);
-		o2 = oo6;
-		s1 = (o1>0) ? (1) : ((o1<0) ? (-1) : (0)); s2 = (o2>0) ? (1) : ((o2<0) ? (-1) : (0));
-		if (s1 != s2) return false;
-#ifdef USE_HYBRID_KERNEL
-	}
-#endif
-	return true;
 }
 
 

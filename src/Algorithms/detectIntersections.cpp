@@ -177,10 +177,11 @@ int Basic_TMesh::selectIntersectingTriangles(UINT16 tris_per_cell, bool justprop
 
  // Deselect everything and select only intersecting triangles
  deselectTriangles();
+ FOREACHTRIANGLE(t, n) t->info = NULL;
  i=0; FOREACHNODE(cells, n)
  {
   (((di_cell *)n->data)->selectIntersections(justproper));
-  if (!(i % 100)) TMesh::report_progress("%d %% done   ", ((i) * 100) / cells.numels());
+  if (!(i % 100)) TMesh::report_progress("%d %% done   ", ((i)* 100) / cells.numels());
   i++;
  }
  TMesh::end_progress();

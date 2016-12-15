@@ -465,37 +465,43 @@ int Basic_TMesh::removeDegenerateTriangles()
 {
 	Node *n;
 	Triangle *t;
-	Edge *e;
-
-	// Split caps
-	E.sort(&edgeCompare);
-	Vertex *ov1, *ov2;
+	Edge *e, *e1, *e2, *e3, *e4;
+	Vertex *ov1, *ov2, *splitvs[2];
 	int nov;
-	bool done;
 
-	do
+	List edges(E);
+	FOREACHVEEDGE((&edges), e, n) MARK_BIT(e, 5);
+
+	while ((e = (Edge *)edges.popHead()) != NULL) // Split caps
 	{
-		done = false;
-		FOREACHEDGE(e, n)
-		{
-			nov = 0;
-			if (e->t1 != NULL && Point::pointInInnerSegment((ov1 = e->t1->oppositeVertex(e)), e->v1, e->v2)) nov++;
-			if (e->t2 != NULL && Point::pointInInnerSegment((ov2 = e->t2->oppositeVertex(e)), e->v1, e->v2)) nov += 2;
-			if (nov == 3 && ov1->squaredDistance(e->v1) < ov2->squaredDistance(e->v1)) { splitEdge(e, ov2); splitEdge(e, ov1); }
-			else if (nov == 3 && ov2->squaredDistance(e->v1) < ov1->squaredDistance(e->v1)) { splitEdge(e, ov1); splitEdge(e, ov2); }
-			else if (nov >= 2) splitEdge(e, ov2);
-			else if (nov == 1) splitEdge(e, ov1);
-			if (nov) done = true;
-		}
-	} while (done);
+		UNMARK_BIT(e, 5);
+		nov = 0;
+		ov1 = (e->t1 != NULL) ? (e->t1->oppositeVertex(e)) : NULL;
+		ov2 = (e->t2 != NULL) ? (e->t2->oppositeVertex(e)) : NULL;
+		if (ov1 != NULL && Point::pointInInnerSegment(ov1, e->v1, e->v2)) splitvs[nov++] = ov1;
+		if (ov2 != NULL && Point::pointInInnerSegment(ov2, e->v1, e->v2)) splitvs[nov++] = ov2;
+		if (nov == 1) splitvs[1] = splitvs[0];
+		if (nov > 1 && ov1->squaredDistance(e->v1) > ov2->squaredDistance(e->v1)) { splitvs[0] = ov2; splitvs[1] = ov1; }
 
-	//FOREACHEDGE(e, n) multiSplitEdge(this, e);
+		if (nov)
+		{
+			e1 = (e->t1 != NULL) ? (e->t1->nextEdge(e)) : NULL;
+			e2 = (e->t1 != NULL) ? (e->t1->prevEdge(e)) : NULL;
+			e3 = (e->t2 != NULL) ? (e->t2->nextEdge(e)) : NULL;
+			e4 = (e->t2 != NULL) ? (e->t2->prevEdge(e)) : NULL;
+			splitEdge(e, splitvs[1]);
+			if (nov > 1) splitEdge(e, splitvs[0]);
+			e = e1;  if (e != NULL && !IS_BIT(e, 5)) { edges.appendTail(e); MARK_BIT(e, 5); }
+			e = e2;  if (e != NULL && !IS_BIT(e, 5)) { edges.appendTail(e); MARK_BIT(e, 5); }
+			e = e3;  if (e != NULL && !IS_BIT(e, 5)) { edges.appendTail(e); MARK_BIT(e, 5); }
+			e = e4;  if (e != NULL && !IS_BIT(e, 5)) { edges.appendTail(e); MARK_BIT(e, 5); }
+		}
+	}
 
 	int nc = 0;	// Num of collapses to remove needles
 
 	// Remove needles
 	FOREACHEDGE(e, n) if (e->isLinked() && ((*e->v1) == (*e->v2))) if (e->collapse()) nc++;
-
 	FOREACHEDGE(e, n) if (e->isLinked() && ((*e->v1) == (*e->v2)))
 	{
 		if (e->t1) unlinkTriangle(e->t1);
@@ -507,11 +513,64 @@ int Basic_TMesh::removeDegenerateTriangles()
 	FOREACHTRIANGLE(t, n) if (t->isExactlyDegenerate()) degn++;
 	if (degn)
 	{
+		TMesh::warning("removeDegenerateTriangles() - This should not happen!\n");
 		FOREACHTRIANGLE(t, n) if (t->isExactlyDegenerate()) MARK_VISIT(t); else UNMARK_VISIT(t);
 	}
 
 	return (nc)*((degn) ? (-1) : (1));
 }
+
+//int Basic_TMesh::removeDegenerateTriangles()
+//{
+//	Node *n;
+//	Triangle *t;
+//	Edge *e;
+//
+//	// Split caps
+//	E.sort(&edgeCompare);
+//	Vertex *ov1, *ov2;
+//	int nov;
+//	bool done;
+//
+//	do
+//	{
+//		done = false;
+//		FOREACHEDGE(e, n)
+//		{
+//			nov = 0;
+//			if (e->t1 != NULL && Point::pointInInnerSegment((ov1 = e->t1->oppositeVertex(e)), e->v1, e->v2)) nov++;
+//			if (e->t2 != NULL && Point::pointInInnerSegment((ov2 = e->t2->oppositeVertex(e)), e->v1, e->v2)) nov += 2;
+//			if (nov == 3 && ov1->squaredDistance(e->v1) < ov2->squaredDistance(e->v1)) { splitEdge(e, ov2); splitEdge(e, ov1); }
+//			else if (nov == 3 && ov2->squaredDistance(e->v1) < ov1->squaredDistance(e->v1)) { splitEdge(e, ov1); splitEdge(e, ov2); }
+//			else if (nov >= 2) splitEdge(e, ov2);
+//			else if (nov == 1) splitEdge(e, ov1);
+//			if (nov) done = true;
+//		}
+//	} while (done);
+//
+//	//FOREACHEDGE(e, n) multiSplitEdge(this, e);
+//
+//	int nc = 0;	// Num of collapses to remove needles
+//
+//	// Remove needles
+//	FOREACHEDGE(e, n) if (e->isLinked() && ((*e->v1) == (*e->v2))) if (e->collapse()) nc++;
+//
+//	FOREACHEDGE(e, n) if (e->isLinked() && ((*e->v1) == (*e->v2)))
+//	{
+//		if (e->t1) unlinkTriangle(e->t1);
+//		if (e->t2) unlinkTriangle(e->t2);
+//	}
+//	removeUnlinkedElements();
+//
+//	int degn = 0;
+//	FOREACHTRIANGLE(t, n) if (t->isExactlyDegenerate()) degn++;
+//	if (degn)
+//	{
+//		FOREACHTRIANGLE(t, n) if (t->isExactlyDegenerate()) MARK_VISIT(t); else UNMARK_VISIT(t);
+//	}
+//
+//	return (nc)*((degn) ? (-1) : (1));
+//}
 
 //int Basic_TMesh::removeDegenerateTriangles()
 //{
@@ -981,9 +1040,9 @@ bool Basic_TMesh::meshclean(int max_iters, int inner_loops)
  for (int n=0; n<max_iters; n++)
  {
   TMesh::info("********* ITERATION %d *********\n",n);
-  nd=strongDegeneracyRemoval(inner_loops);
+  nd = strongDegeneracyRemoval(inner_loops);
   deselectTriangles(); invertSelection();
-  ni=strongIntersectionRemoval(inner_loops);
+  ni = strongIntersectionRemoval(inner_loops);
   if (ni && nd)
   {
    FOREACHTRIANGLE(t, m) if (t->isExactlyDegenerate()) ni=false;

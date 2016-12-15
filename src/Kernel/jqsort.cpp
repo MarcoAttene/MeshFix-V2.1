@@ -28,9 +28,17 @@
 *                                                                           *
 ****************************************************************************/
 
+#define USE_STD_SORT
+
+#ifdef USE_STD_SORT
+#include <vector>
+#include <algorithm>
+#endif
+
 namespace T_MESH
 {
 
+#ifndef USE_STD_SORT
 inline void jswap(void *v[], int i, int j)
 {
  void *temp = v[i];
@@ -52,9 +60,28 @@ void jqsort_prv(void *v[], int left, int right, int (*comp)(const void *, const 
  jqsort_prv(v, last+1, right, comp);
 }
 
-void jqsort(void *v[], int numels, int (*comp)(const void *, const void *))
+void jqsort(void *v[], int numels, int(*comp)(const void *, const void *))
 {
- jqsort_prv(v, 0, numels-1, comp);
+	jqsort_prv(v, 0, numels-1, comp);
 }
+#else
+
+class compobj
+{
+	int(*comp)(const void *, const void *);
+
+public:
+	compobj(int(*c)(const void *, const void *)) { comp = c; }
+
+	bool operator()(void *a, void *b) {	return (comp(a, b) < 0); }
+};
+
+void jqsort(void *v[], int numels, int(*comp)(const void *, const void *))
+{
+	compobj a(comp);
+	std::sort(v, v + numels, a);
+}
+#endif
 
 } //namespace T_MESH
+

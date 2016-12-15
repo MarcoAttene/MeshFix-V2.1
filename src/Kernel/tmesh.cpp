@@ -40,12 +40,12 @@ extern "C" void initPredicates();
 
 void (* TMesh::display_message)(const char*, int) = NULL;
 
-const char *TMesh::app_name = NULL;
-const char *TMesh::app_version = NULL;
-const char *TMesh::app_year = NULL;
-const char *TMesh::app_authors = NULL;
-const char *TMesh::app_url = NULL;
-const char *TMesh::app_maillist = NULL;
+char *TMesh::app_name = NULL;
+char *TMesh::app_version = NULL;
+char *TMesh::app_year = NULL;
+char *TMesh::app_authors = NULL;
+char *TMesh::app_url = NULL;
+char *TMesh::app_maillist = NULL;
 const char *TMesh::filename = NULL;
 bool TMesh::quiet = false;
 
@@ -183,17 +183,33 @@ void TMesh::end_progress()
   printf("\n");
 }
 
-void TMesh::useRationals(bool u) 
+void TMesh::useRationals(bool u)
 {
 #ifdef USE_HYBRID_KERNEL
-	coord::use_rationals = u;
+	coord::useRationals(u);
 #endif
 }
 
 bool TMesh::isUsingRationals()
 {
 #ifdef USE_HYBRID_KERNEL
-	return coord::use_rationals;
+	return coord::isUsingRationals();
+#else
+	return false;
+#endif
+}
+
+void TMesh::useFiltering(bool u)
+{
+#ifdef USE_HYBRID_KERNEL
+	coord::useFiltering(u);
+#endif
+}
+
+bool TMesh::isUsingFiltering()
+{
+#ifdef USE_HYBRID_KERNEL
+	return coord::isUsingFiltering();
 #else
 	return false;
 #endif

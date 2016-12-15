@@ -49,7 +49,7 @@ typedef CGAL::Lazy_exact_nt<CGAL::Gmpq> EXACT_NT;
 #define EXACT_NT_NUMERATOR(x) ((x)->exact().numerator())
 
 #else
-#include <gmpxx.h>
+#include <mpirxx.h>
 
 typedef mpq_class EXACT_NT;
 #define EXACT_NT_TO_DOUBLE(x) ((x).get_d())
@@ -68,11 +68,29 @@ namespace T_MESH
 {
 
 #ifdef USE_HYBRID_KERNEL
-class coord
+class PM_Rational
 	{
+	private:
+		// Only one of the following two static members can be true at any time, but both of them can be false
+		// Thus, three configurations are possible:
+		// 1) APPROXIMATED: use_rationals = false, use_filtering = false
+		// 2) FILTERED: use_rationals = false, use_filtering = true
+		// 3) PRECISE: use_rationals = true, use_filtering = false
+		static bool use_rationals;	// Kernel_mode uses rational numbers (precise)
+		static bool use_filtering;	// Kernel_mode uses filtering
+
+	public:
+		inline static bool isUsingRationals() { return use_rationals; }
+		inline static bool isUsingFiltering() { return use_filtering; }
+		static void useRationals(bool v) { use_rationals = v; use_filtering = !v; }
+		static void useFiltering(bool v) { use_filtering = v; if (v) use_rationals = false; }
+
 	protected:
 		int64_t _val;		// value. Might contain either a double or a pointer to mpq_class.
 		bool _whv;			// Which value type is stored here. 1=rational, 0=double
+
+		inline bool isOfRationalType() const { return _whv; }
+		inline bool isOfDoubleType() const { return !_whv; }
 
 		inline static int64_t d2int64t(double a) { return *((int64_t *)((void *)(&a))); }
 		inline static double& int64t2d(const int64_t& a) { return *((double *)((void *)(&a))); }
@@ -87,17 +105,14 @@ class coord
 		void switchToRational();
 
 	public:
+		PM_Rational() : _whv(0) {} // Undetermined double
+		PM_Rational(const EXACT_NT& a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(EXACT_NT_TO_DOUBLE(a))); }
+		PM_Rational(float a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
+		PM_Rational(double a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
+		PM_Rational(int a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
 
-		static bool use_rationals;
-
-		coord() : _whv(0) {} // Undetermined double
-		coord(const EXACT_NT& a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(EXACT_NT_TO_DOUBLE(a))); }
-		coord(float a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
-		coord(double a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
-		coord(int a) { _whv = use_rationals; _val = (_whv) ? ((int64_t)new EXACT_NT(a)) : (d2int64t(a)); }
-
-		coord(const coord& a) { _whv = a._whv; _val = (_whv) ? ((int64_t)new EXACT_NT(a.getVal())) : (a._val); }
-		~coord() { if (_whv) delete ((EXACT_NT *)_val); }
+		PM_Rational(const PM_Rational& a) { _whv = a._whv; _val = (_whv) ? ((int64_t)new EXACT_NT(a.getVal())) : (a._val); }
+		~PM_Rational() { if (_whv) delete ((EXACT_NT *)_val); }
 
 		inline EXACT_NT toRational() const { return (_whv) ? (getVal()) : (EXACT_NT(getDVal())); }
 
@@ -106,40 +121,38 @@ class coord
 		inline int toInt() const { return int(toDouble()); }
 		inline float toFloat() const { return float(toDouble()); }
 
-		void operator+=(const coord& a);
-		void operator-=(const coord& a);
-		void operator*=(const coord& a);
-		void operator/=(const coord& a);
-		coord operator+(const coord& a) const;
-		coord operator-(const coord& a) const;
-		coord operator*(const coord& a) const;
-		coord operator/(const coord& a) const;
-		bool operator==(const coord& a) const;
-		bool operator!=(const coord& a) const;
+		void operator+=(const PM_Rational& a);
+		void operator-=(const PM_Rational& a);
+		void operator*=(const PM_Rational& a);
+		void operator/=(const PM_Rational& a);
+		PM_Rational operator+(const PM_Rational& a) const;
+		PM_Rational operator-(const PM_Rational& a) const;
+		PM_Rational operator*(const PM_Rational& a) const;
+		PM_Rational operator/(const PM_Rational& a) const;
+		bool operator==(const PM_Rational& a) const;
+		bool operator!=(const PM_Rational& a) const;
 
-		coord& operator=(const coord& a);
+		PM_Rational& operator=(const PM_Rational& a);
 		void setFromRational(const EXACT_NT& a);
 
-		bool operator<(const coord& a) const;
-		bool operator>(const coord& a) const;
-		inline bool operator<=(const coord& a) const { return (operator==(a) || operator<(a)); }
-		inline bool operator>=(const coord& a) const { return (operator==(a) || operator>(a)); }
+		bool operator<(const PM_Rational& a) const;
+		bool operator>(const PM_Rational& a) const;
+		inline bool operator<=(const PM_Rational& a) const { return (operator==(a) || operator<(a)); }
+		inline bool operator>=(const PM_Rational& a) const { return (operator==(a) || operator>(a)); }
 
-		// orient2D: >0 =0 <0 if (p,q,r) are CCW, aligned, CW respectively
-		static coord orient2D(const coord& px, const coord& py, const coord& qx, const coord& qy, const coord& rx, const coord& ry);
+		friend PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rational& qx, const PM_Rational& qy, const PM_Rational& rx, const PM_Rational& ry);
+		friend PM_Rational orient3D(const class Point *t, const class Point *a, const class Point *b, const class Point *c);
+};
 
-		inline static coord determinant3x3(const coord& a11, const coord& a12, const coord& a13, const coord& a21, const coord& a22, const coord& a23, const coord& a31, const coord& a32, const coord& a33)
-		{ return a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);}
-	};
+PM_Rational operator-(const PM_Rational& a);
+PM_Rational ceil(const PM_Rational& a);
+PM_Rational floor(const PM_Rational& a);
+PM_Rational round(const PM_Rational& a);
 
-	coord operator-(const coord& a);
-	coord ceil(const coord& a);
-	coord floor(const coord& a);
+/**************** I/O operators ****************/
 
-	/**************** I/O operators ****************/
-
-	inline std::ostream & operator<<(std::ostream &o, const coord& c) { return o << c.toRational(); }
-	inline std::istream & operator>>(std::istream &i, coord& c) { EXACT_NT a; i >> a; c.setFromRational(a); return i; }
+inline std::ostream & operator<<(std::ostream &o, const PM_Rational& c) { return o << c.toRational(); }
+inline std::istream & operator>>(std::istream &i, PM_Rational& c) { EXACT_NT a; i >> a; c.setFromRational(a); return i; }
 
 #define TMESH_TO_DOUBLE(x) ((x).toDouble())
 #define TMESH_TO_FLOAT(x) ((x).toFloat())
@@ -147,13 +160,15 @@ class coord
 
 #else
 
-typedef double coord;
+typedef double PM_Rational;
 
 #define TMESH_TO_DOUBLE(x) (x)
 #define TMESH_TO_FLOAT(x) ((float)(x))
 #define TMESH_TO_INT(x) ((int)(x))
 
 #endif
+
+typedef PM_Rational coord;
 
 #define TMESH_DETERMINANT3X3(a11, a12, a13, a21, a22, a23, a31, a32, a33) ((a11)*((a22)*(a33) - (a23)*(a32)) - (a12)*((a21)*(a33) - (a23)*(a31)) + (a13)*((a21)*(a32) - (a22)*(a31)))
 

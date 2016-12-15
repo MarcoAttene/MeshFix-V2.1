@@ -54,7 +54,7 @@ class Triangle
  void *info;			//!< Further information
  unsigned char mask;		//!< bit-mask for marking purposes
 
- Triangle();	//!< AMF_ADD 1.1>
+ Triangle();
  Triangle(Edge *, Edge *, Edge *);		//!< Constructor
 
  //! Returns true only if object is a basic Triangle. All the reimplementations must return false.
@@ -64,7 +64,7 @@ class Triangle
 
  //! Inverts the orientation of the triangle
 
- TMESH_VIRTUAL void invert() { p_swap((void **)(&e2), (void **)(&e3)); } //! < AMF_CHANGE 1.1 >
+ TMESH_VIRTUAL void invert() { p_swap((void **)(&e2), (void **)(&e3)); }
 
  Vertex *v1() const {return e1->commonVertex(e2);}	//!< First vertex
  Vertex *v2() const {return e2->commonVertex(e3);}	//!< Second vertex
