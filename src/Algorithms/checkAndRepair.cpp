@@ -786,6 +786,8 @@ int Basic_TMesh::removeSmallestComponents()
  Triangle *t, *t1, *t2, *t3;
  int nt = 0, gnt = 0;
 
+ if (T.numels() == 0) return 0;
+
  FOREACHTRIANGLE(t, n) UNMARK_BIT(t, 5);
 
  t = ((Triangle *)T.head()->data);
