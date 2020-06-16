@@ -58,7 +58,7 @@ The executable will be saved in bin/.
 Both 32bit and 64bit versions can be produced.
 
 The source code is standard ANSI C++ and should be portable.
-To compile on other operating systems (e.g. Linux) you may need to manually edit appropriate compilation instructions (e.g. Makefiles).
+To compile on other configurations you may use CMake (thanks to Jeremie Dumas for having created the CMakeLists!).
 
 
 ---------
