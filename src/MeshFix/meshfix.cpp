@@ -203,7 +203,10 @@ int main(int argc, char *argv[])
  TMesh::info("Saving output mesh ...\n");
  tin.save(outfilename);
 
- printf("Elapsed time: %d ms\n", clock() - beginning);
+ // Normally, CLOCKS_PER_SEC >= 1000, but this is not technically guaranteed,
+ // and if it were not true, dividing by zero would invoke undefined behavior.
+ if (CLOCKS_PER_SEC >= 1000)
+	 printf("Elapsed time: %d ms\n", (clock() - beginning) / (CLOCKS_PER_SEC / 1000));
 
  return 0;
 }
