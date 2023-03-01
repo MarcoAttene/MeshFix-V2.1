@@ -79,7 +79,7 @@ void TMesh::error(const char *msg, ...)
   display_message(fms, DISPMSG_ACTION_ERRORDIALOG);
  else
  {
-  fprintf(stderr,fms);
+  fputs(fms, stderr);
   exit(-1);
  }
 }
@@ -119,7 +119,7 @@ void TMesh::info(const char *msg, ...)
  if (display_message != NULL)
   display_message(fms, DISPMSG_ACTION_PUTMESSAGE);
  else
-  printf(fms);
+  fputs(fms, stdout);
 
  va_end(ap);
 }
@@ -218,7 +218,7 @@ bool TMesh::isUsingFiltering()
 void TMesh::addMessageToLogFile(const char *msg)
 {
 	FILE *fp = fopen("tmesh.log", "a");
-	fprintf(fp, msg);
+	fputs(msg, fp);
 	fclose(fp);
 }
 
