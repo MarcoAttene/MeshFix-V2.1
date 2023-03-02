@@ -159,7 +159,7 @@ void mc_cell::polygonize(Basic_TMesh *tin)
  int i,t[3];
  unsigned char lu = lookdown();
 
- static const char mc_triTable[256][20] =
+ static const signed char mc_triTable[256][20] =
  { 
   {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
   { 0,  8,  3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
