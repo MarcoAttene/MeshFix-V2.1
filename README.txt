@@ -2,7 +2,7 @@
 MeshFIX - Version 2.1                                                          
 ----------------------------
 
-by Marco Attene
+by <a href="http://saturno.ge.imati.cnr.it/ima/personal-old/attene/PersonalPage/attene.html">Marco Attene</a>
                                                                     
 Consiglio Nazionale delle Ricerche                                        
 Istituto di Matematica Applicata e Tecnologie Informatiche                
